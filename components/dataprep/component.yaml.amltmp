@@ -1,0 +1,43 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
+name: got_data_preparation
+display_name: GOT Data Preparation
+version: 1
+type: command
+
+inputs:
+  input_folder:
+    type: mltable
+  target_col:
+    type: string
+    default: house_affiliation
+  test_size:
+    type: number
+    default: 0.2
+  seed:
+    type: integer
+    default: 42
+  stratify:
+    type: integer
+    default: 1
+
+outputs:
+  out_train:
+    type: mltable
+  out_test:
+    type: mltable
+
+environment:
+  conda_file: conda.yaml
+  image: mcr.microsoft.com/azureml/openmpi5.0-ubuntu24.04:latest
+
+code: .
+
+command: >-
+  python prepare_component.py
+  --input_folder ${{inputs.input_folder}}
+  --target_col ${{inputs.target_col}}
+  --test_size ${{inputs.test_size}}
+  --seed ${{inputs.seed}}
+  --stratify ${{inputs.stratify}}
+  --out_train ${{outputs.out_train}}
+  --out_test ${{outputs.out_test}}
