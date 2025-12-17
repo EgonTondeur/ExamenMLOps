@@ -1,0 +1,24 @@
+$schema: https://azuremlschemas.azureedge.net/latest/pipelineJob.schema.json
+type: pipeline
+
+description: Game of Thrones - Data Preparation Pipeline
+
+settings:
+  default_compute: azureml:examen   # 👈 DIT IS DE FIX
+
+inputs:
+  raw_data:
+    type: mltable
+    path: azureml:game_of_thrones:1
+
+jobs:
+  dataprep:
+    type: command
+    component: azureml:got_data_preparation:1
+    inputs:
+      input_folder: ${{parent.inputs.raw_data}}
+    outputs:
+      out_train:
+        mode: upload
+      out_test:
+        mode: upload
