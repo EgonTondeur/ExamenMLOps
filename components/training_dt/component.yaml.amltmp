@@ -1,7 +1,7 @@
 $schema: https://azuremlschemas.azureedge.net/latest/commandComponent.schema.json
 
 name: got_dt_training
-version: 2
+version: 4
 display_name: GOT Decision Tree Training
 type: command
 

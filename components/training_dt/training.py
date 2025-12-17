@@ -1,11 +1,13 @@
 import argparse
 import json
 import os
-import joblib
 
 import pandas as pd
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import accuracy_score, classification_report
+
+import mlflow
+import mlflow.sklearn
 
 
 def main():
@@ -29,7 +31,9 @@ def main():
 
     args = parser.parse_args()
 
+    # --------------------------------------------------
     # Load data
+    # --------------------------------------------------
     X_train_path = os.path.join(args.train_ready, "X_train.csv")
     y_train_path = os.path.join(args.train_ready, "y_train.csv")
     X_test_path  = os.path.join(args.test_ready, "X_test.csv")
@@ -45,26 +49,62 @@ def main():
     X_test = pd.read_csv(X_test_path)
     y_test = pd.read_csv(y_test_path)[args.target_col].astype(str)
 
+    # --------------------------------------------------
     # Train model
+    # --------------------------------------------------
     clf = DecisionTreeClassifier(
         max_depth=args.max_depth,
         min_samples_split=args.min_samples_split,
         min_samples_leaf=args.min_samples_leaf,
         random_state=args.random_state,
     )
+
     clf.fit(X_train, y_train)
 
+    # --------------------------------------------------
     # Evaluate
+    # --------------------------------------------------
     y_pred = clf.predict(X_test)
     acc = float(accuracy_score(y_test, y_pred))
-    report = classification_report(y_test, y_pred, output_dict=True, zero_division=0)
+    report = classification_report(
+        y_test,
+        y_pred,
+        output_dict=True,
+        zero_division=0
+    )
 
-    # Save model
-    os.makedirs(args.model_output, exist_ok=True)
-    model_path = os.path.join(args.model_output, "model.joblib")
-    joblib.dump(clf, model_path)
+    # --------------------------------------------------
+    # MLflow logging (CRUCIAAL voor register_model)
+    # --------------------------------------------------
+    mlflow.start_run()
 
-    # Save metrics (json, later used for MLflow logging)
+    # Log parameters
+    mlflow.log_param("max_depth", args.max_depth)
+    mlflow.log_param("min_samples_split", args.min_samples_split)
+    mlflow.log_param("min_samples_leaf", args.min_samples_leaf)
+    mlflow.log_param("random_state", args.random_state)
+
+    # Log metrics
+    mlflow.log_metric("accuracy", acc)
+
+    # Log full classification report
+    for label, metrics in report.items():
+        if isinstance(metrics, dict):
+            for metric_name, value in metrics.items():
+                if isinstance(value, (int, float)):
+                    mlflow.log_metric(f"{label}_{metric_name}", value)
+
+    # Log model as MLflow model
+    mlflow.sklearn.log_model(
+        sk_model=clf,
+        artifact_path="mlflow_model"
+    )
+
+    mlflow.end_run()
+
+    # --------------------------------------------------
+    # Save metrics artifact (optioneel, maar netjes)
+    # --------------------------------------------------
     os.makedirs(args.metrics_output, exist_ok=True)
     with open(os.path.join(args.metrics_output, "metrics.json"), "w") as f:
         json.dump(
@@ -76,7 +116,7 @@ def main():
             indent=2
         )
 
-    print("Training completed")
+    print("✅ Training completed successfully")
     print("Accuracy:", acc)
 
 

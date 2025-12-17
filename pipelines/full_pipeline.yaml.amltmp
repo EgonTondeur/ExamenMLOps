@@ -28,7 +28,7 @@ jobs:
 
   training:
     type: command
-    component: azureml:got_dt_training:2
+    component: azureml:got_dt_training:4
     inputs:
       train_ready: ${{parent.jobs.dataprep.outputs.out_train}}
       test_ready: ${{parent.jobs.dataprep.outputs.out_test}}
