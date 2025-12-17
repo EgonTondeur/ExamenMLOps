@@ -1,0 +1,49 @@
+$schema: https://azuremlschemas.azureedge.net/latest/pipelineJob.schema.json
+type: pipeline
+
+description: Game of Thrones - Data Preparation + Training Pipeline
+experiment_name: ExamenMLOps
+
+settings:
+  default_compute: azureml:examen
+
+inputs:
+  raw_data:
+    type: mltable
+    path: azureml:game_of_thrones:1
+
+jobs:
+  dataprep:
+    type: command
+    component: azureml:got_data_preparation:1
+    inputs:
+      input_folder: ${{parent.inputs.raw_data}}
+    outputs:
+      out_train:
+        mode: upload
+        type: mltable
+      out_test:
+        mode: upload
+        type: mltable
+
+  training:
+    type: command
+    component: azureml:got_dt_training:1
+    inputs:
+      train_ready: ${{parent.jobs.dataprep.outputs.out_train}}
+      test_ready: ${{parent.jobs.dataprep.outputs.out_test}}
+      max_depth: 5
+      min_samples_split: 2
+      min_samples_leaf: 1
+      random_state: 42
+    outputs:
+      model_output:
+        mode: upload
+        type: uri_folder
+
+  register_model:
+    type: command
+    component: azureml://registries/azureml/components/register_model/versions/0.0.21
+    inputs:
+      model_path: ${{parent.jobs.training.outputs.model_output}}
+      model_name: got_decision_tree

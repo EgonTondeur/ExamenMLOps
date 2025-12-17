@@ -41,3 +41,4 @@ command: >-
   --stratify ${{inputs.stratify}}
   --out_train ${{outputs.out_train}}
   --out_test ${{outputs.out_test}}
+    
